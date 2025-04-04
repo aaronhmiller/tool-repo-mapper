@@ -66,7 +66,15 @@ async function readExcelFile(filename: string): Promise<string[][]> {
   const workbook = read(await Deno.readFile(filename));
   const sheetName = workbook.SheetNames[0];
   const sheet = workbook.Sheets[sheetName];
-  return utils.sheet_to_json(sheet, { header: 1, raw: false }) as string[][];
+  // Use raw: false to get formatted strings and header: 1 to get array format
+  const data = utils.sheet_to_json(sheet, { header: 1, raw: false }) as (string | number | boolean | null)[][];
+  
+  // Convert all values to strings
+  return data.map(row => 
+    row.map(cell => 
+      cell === null || cell === undefined ? '' : String(cell).trim()
+    )
+  );
 }
 
 async function pullFields(args: ReportingArgs, filename: string): Promise<ReportingArgs> {
@@ -121,7 +129,7 @@ function createMapping(collection1: string[], collection2: string[], mapType: st
 
   // Group repositories by project
   collection2.forEach((project, index) => {
-    const repo = collection1[index].replace(/^["']|["']$/g, ''); // Remove any quotes
+    const repo = collection1[index];
     if (!projectMap.has(project)) {
       projectMap.set(project, new Set());
     }
